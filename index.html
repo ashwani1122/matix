@@ -1,55 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <script>
-  const ws = new WebSocket("ws://localhost:3000");
-  let add = ""
-  let sum = 0;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSocket Demo</title>
 
-  ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    const container = document.getElementById("output");
-    add = document.getElementById("result");
+  <script>
+    const ws = new WebSocket("ws://localhost:3000");
 
-    container.innerHTML = "";
+    let sum = 0;
 
-    data.forEach((num) => {
-      const p = document.createElement("p");
-      p.innerText = num;
-      sum += num;
+    ws.onopen = () => {
+      // request numbers from server
+      ws.send(JSON.stringify({ type: "generate" }));
+    };
 
-      p.style.color = "white";
-      p.style.fontSize = "20px";
-      p.style.border = "2px solid black";
-      p.style.padding = "20px";
-      p.style.backgroundColor = "blue";
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
 
-      container.appendChild(p);
-    });
+      if (message.type === "numbers") {
+        const data = message.data;
 
-    
-  };
+        const container = document.getElementById("output");
+        const input = document.getElementById("result");
 
-  function calculat() {
-    alert("Input: " + add.value);
-    alert("Sum: " + sum);
+        container.innerHTML = "";
+        sum = 0; // 🔴 IMPORTANT FIX (reset sum)
 
-    if (Number(add.value) === sum) {
-      alert("✅ Correct!");
-    } else {
-      alert("❌ Wrong!");
+        data.forEach((num) => {
+          const p = document.createElement("p");
+          p.innerText = num;
+
+          sum += num;
+
+          p.style.color = "white";
+          p.style.fontSize = "20px";
+          p.style.border = "2px solid black";
+          p.style.padding = "20px";
+          p.style.backgroundColor = "blue";
+
+          container.appendChild(p);
+        });
+      }
+    };
+
+    function calculat() {
+      const input = document.getElementById("result");
+
+      alert("Input: " + input.value);
+      alert("Sum: " + sum);
+
+      if (Number(input.value) === sum) {
+        alert("✅ Correct!");
+      } else {
+        alert("❌ Wrong!");
+      }
+
+      // request new numbers after check
+      ws.send(JSON.stringify({ type: "generate" }));
+      input.value = "";
     }
-  }
-</script>
+  </script>
 </head>
-<body style="background-color: rgb(12, 12, 26); display: flex; flex-direction: column; align-content: center; justify-items: center;">
-    
-   <div id="output"></div>
 
-<input id="result" placeholder="enter result" type="text">
-<button onclick="calculat()" type="button">submit</button>
+<body style="background-color: rgb(12, 12, 26); display: flex; flex-direction: column;">
+  <div id="output"></div>
 
+  <input onchange="calculat()" id="result" placeholder="enter result" type="text">
+</body>
 </html>
