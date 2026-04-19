@@ -3,69 +3,110 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WebSocket Demo</title>
+  <title>Real-time Sum Game</title>
+
+  <style>
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: red;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      display: none;
+    }
+  </style>
 
   <script>
-    const ws = new WebSocket("ws://localhost:3000");
+  const ws = new WebSocket("ws://localhost:3000");
 
-    let sum = 0;
+  let sum = 0;
+  let timer = null;
 
-    ws.onopen = () => {
-      // request numbers from server
-      ws.send(JSON.stringify({ type: "generate" }));
-    };
+  ws.onopen = () => {
+    ws.send(JSON.stringify({ type: "generate" }));
+  };
 
-    ws.onmessage = (event) => {
-      const message = JSON.parse(event.data);
+  ws.onmessage = (event) => {
+    const message = JSON.parse(event.data);
 
-      if (message.type === "numbers") {
-        const data = message.data;
+    if (message.type === "numbers") {
+      const data = message.data;
 
-        const container = document.getElementById("output");
-        const input = document.getElementById("result");
+      const container = document.getElementById("output");
+      container.innerHTML = "";
 
-        container.innerHTML = "";
-        sum = 0; // 🔴 IMPORTANT FIX (reset sum)
+      sum = 0;
 
-        data.forEach((num) => {
-          const p = document.createElement("p");
-          p.innerText = num;
+      data.forEach((num) => {
+        const p = document.createElement("p");
+        p.innerText = num;
 
-          sum += num;
+        sum += num;
 
-          p.style.color = "white";
-          p.style.fontSize = "20px";
-          p.style.border = "2px solid black";
-          p.style.padding = "20px";
-          p.style.backgroundColor = "blue";
+        p.style.color = "white";
+        p.style.fontSize = "20px";
+        p.style.border = "2px solid black";
+        p.style.padding = "20px";
+        p.style.backgroundColor = "blue";
 
-          container.appendChild(p);
-        });
-      }
-    };
+        container.appendChild(p);
+      });
 
-    function calculat() {
-      const input = document.getElementById("result");
-
-      alert("Input: " + input.value);
-      alert("Sum: " + sum);
-
-      if (Number(input.value) === sum) {
-        alert("✅ Correct!");
-      } else {
-        alert("❌ Wrong!");
-      }
-
-      // request new numbers after check
-      ws.send(JSON.stringify({ type: "generate" }));
-      input.value = "";
+      document.getElementById("result").value = "";
     }
-  </script>
+  };
+
+  function showToast(msg) {
+    const toast = document.getElementById("toast");
+    toast.innerText = msg;
+    toast.style.display = "block";
+
+    setTimeout(() => {
+      toast.style.display = "none";
+    }, 1500);
+  }
+
+  function handleInput(value) {
+    const num = Number(value);
+
+    // clear previous timer
+    clearTimeout(timer);
+
+    if (!value) return;
+
+    // ✅ correct → instant
+    if (num === sum) {
+      ws.send(JSON.stringify({ type: "generate" }));
+      return;
+    }
+
+    // ⏳ wait before showing error
+    timer = setTimeout(() => {
+      if (num < sum) {
+        showToast("❌ Incorrect (too low)");
+      } else if (num > sum) {
+        showToast("❌ Incorrect (too high)");
+      }
+    }, 400); // adjust delay here
+  }
+</script>
 </head>
 
 <body style="background-color: rgb(12, 12, 26); display: flex; flex-direction: column;">
+  
   <div id="output"></div>
 
-  <input onchange="calculat()" id="result" placeholder="enter result" type="text">
+  <!-- 🔥 oninput instead of onchange -->
+  <input 
+    oninput="handleInput(this.value)" 
+    id="result" 
+    placeholder="enter result" 
+    type="number"
+  >
+
+  <div id="toast"></div>
+
 </body>
 </html>
