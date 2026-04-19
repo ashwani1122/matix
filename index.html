@@ -6,6 +6,27 @@
   <title>Real-time Sum Game</title>
 
   <style>
+    .input-box {
+    width: 260px;
+    padding: 12px 16px;
+    font-size: 18px;
+    border-radius: 12px;
+    border: 2px solid transparent;
+    outline: none;
+    background: #1e1e2f;
+    color: white;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  }
+
+  .input-box::placeholder {
+    color: #aaa;
+  }
+
+  .input-box:focus {
+    border: 2px solid #4f9cff;
+    box-shadow: 0 0 10px #4f9cff;
+  }
     #toast {
       position: fixed;
       bottom: 20px;
@@ -16,6 +37,11 @@
       border-radius: 8px;
       display: none;
     }
+    .container{
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 40px;
+    }
   </style>
 
   <script>
@@ -25,6 +51,7 @@
   let timer = null;
 
   ws.onopen = () => {
+  
     ws.send(JSON.stringify({ type: "generate" }));
   };
 
@@ -94,17 +121,17 @@
 </script>
 </head>
 
-<body style="background-color: rgb(12, 12, 26); display: flex; flex-direction: column;">
+<body style="background-color: rgb(12, 12, 26); display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
+  <div class="container" style="display: flex;" id="output"></div>
   
-  <div id="output"></div>
 
   <!-- 🔥 oninput instead of onchange -->
   <input 
-    oninput="handleInput(this.value)" 
-    id="result" 
-    placeholder="enter result" 
-    type="number"
-  >
+  oninput="handleInput(this.value)" 
+  id="result" 
+  placeholder="Enter result..." 
+  class="input-box"
+/>
 
   <div id="toast"></div>
 
