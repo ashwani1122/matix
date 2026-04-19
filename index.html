@@ -47,43 +47,40 @@
   <script>
   const ws = new WebSocket("ws://localhost:3000");
 
-  let sum = 0;
-  let timer = null;
-
   ws.onopen = () => {
-  
-    ws.send(JSON.stringify({ type: "generate" }));
+    console.log("Connected");
   };
 
   ws.onmessage = (event) => {
     const message = JSON.parse(event.data);
+    if (message.type == 'game_update') {
+      renderNumbers(message.numbers);
+    }
 
-    if (message.type === "numbers") {
-      const data = message.data;
-
-      const container = document.getElementById("output");
-      container.innerHTML = "";
-
-      sum = 0;
-
-      data.forEach((num) => {
-        const p = document.createElement("p");
-        p.innerText = num;
-
-        sum += num;
-
-        p.style.color = "white";
-        p.style.fontSize = "20px";
-        p.style.border = "2px solid black";
-        p.style.padding = "20px";
-        p.style.backgroundColor = "blue";
-
-        container.appendChild(p);
-      });
-
-      document.getElementById("result").value = "";
+    if (message.type === "wrong") {
+      showToast("❌ Incorrect!");
     }
   };
+
+  function renderNumbers(data) {
+    const container = document.getElementById("output");
+    container.innerHTML = "";
+
+    data.forEach((num) => {
+      const p = document.createElement("p");
+      p.innerText = num;
+
+      p.style.color = "white";
+      p.style.fontSize = "20px";
+      p.style.border = "2px solid black";
+      p.style.padding = "20px";
+      p.style.backgroundColor = "blue";
+
+      container.appendChild(p);
+    });
+
+    document.getElementById("result").value = "";
+  }
 
   function showToast(msg) {
     const toast = document.getElementById("toast");
@@ -95,35 +92,30 @@
     }, 1500);
   }
 
+  let debounceTimer = null;
+
   function handleInput(value) {
-    const num = Number(value);
-
-    // clear previous timer
-    clearTimeout(timer);
-
     if (!value) return;
 
-    // ✅ correct → instant
-    if (num === sum) {
-      ws.send(JSON.stringify({ type: "generate" }));
-      return;
-    }
+    const num = Number(value);
 
-    // ⏳ wait before showing error
-    timer = setTimeout(() => {
-      if (num < sum) {
-        showToast("❌ Incorrect (too low)");
-      } else if (num > sum) {
-        showToast("❌ Incorrect (too high)");
-      }
-    }, 400); // adjust delay here
-  }
-</script>
+    // 🔥 clear previous timer
+    clearTimeout(debounceTimer);
+
+    // ⏳ debounce sending answer
+    debounceTimer = setTimeout(() => {
+      ws.send(JSON.stringify({
+        type: "answer",
+        value: num
+      }));
+    }, 400); // adjust delay (300–600ms)
+  }</script>
 </head>
 
 <body style="background-color: rgb(12, 12, 26); display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
-  <div class="container" style="display: flex;" id="output"></div>
   
+  <div style="border:1px solid white; height: 200px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 20px; border-radius: 20px;"><div class="container" style="display: flex;" id="output"></div>
+  <div id="leaderboard"></div>
 
   <!-- 🔥 oninput instead of onchange -->
   <input 
@@ -132,7 +124,7 @@
   placeholder="Enter result..." 
   class="input-box"
 />
-
+</div>
   <div id="toast"></div>
 
 </body>
